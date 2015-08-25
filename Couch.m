@@ -4,7 +4,7 @@ classdef Couch
     
     properties (Constant, Hidden, GetAccess = private)
         Users = [...
-            struct('user', 'mher', 'pass', '4mher2c')
+            struct('user', 'openuser', 'pass', 'openpassword')
             ];
     end
     
@@ -64,7 +64,7 @@ classdef Couch
             if ~isstruct(Data)
                 throw(MException('CouchPOST:Data_not_valid', 'Input Data not of struct type'));
             end
-            Response = cell(length(Data), 1);
+            Response = cell(length(Data), 2);
             for i = 1:length(Data)
                 [error, json] = unix([...
                     'curl -X POST http://',...
@@ -74,10 +74,12 @@ classdef Couch
                     '/', DB,...
                     ' -d ''', Couch.encodeJSON(Data(i)), '''',...
                     ' -H "Content-Type:application/json"']);
+                Response{i, 1} = json;
                 if error
-                    Response{i} = 'System Error. Bad Request';
+                    Response{i, 2} = 'System Error. Bad Request';
+                else
+                    Response{i, 2} = Couch.parseJSON(json);
                 end
-                Response{i} = Couch.parseJSON(json);
             end
         end
     end
@@ -105,7 +107,7 @@ classdef Couch
         end
         function json = encodeJSON(mat)
             if ischar(mat)
-                json = ['"' mat '"'];
+                json = ['"' strrep(strrep(mat, '"', ''''), '''', '''"''"''') '"'];
             elseif length(mat) > 1
                 json = '[';
                 for i = 1:length(mat)
